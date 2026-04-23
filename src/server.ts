@@ -17,12 +17,17 @@ app.use(express.json());
 if (bot) {
   // If webhook URL is set, use webhooks
   if (process.env.WEBHOOK_URL) {
+    const baseUrl = process.env.WEBHOOK_URL.replace(/\/$/, '');
     const webhookPath = '/api/bot-webhook';
-    app.use(webhookPath, webhookCallback(bot, 'express'));
+    
+    app.post(webhookPath, (req, res, next) => {
+      console.log('Incoming webhook request:', req.body?.update_id);
+      next();
+    }, webhookCallback(bot, 'express'));
     
     // Set webhook in Telegram
-    bot.api.setWebhook(`${process.env.WEBHOOK_URL}${webhookPath}`)
-      .then(() => console.log(`Webhook is set to ${process.env.WEBHOOK_URL}${webhookPath}`))
+    bot.api.setWebhook(`${baseUrl}${webhookPath}`)
+      .then(() => console.log(`Webhook is set to ${baseUrl}${webhookPath}`))
       .catch(console.error);
   } else {
     // Local dev: start polling
