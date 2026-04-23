@@ -1,6 +1,9 @@
 # Установка базового образа Node.js
 FROM node:20-alpine
 
+# Устанавливаем необходимые системные зависимости (включая openssl для Prisma)
+RUN apk add --no-cache openssl bash
+
 # Устанавливаем рабочую директорию
 WORKDIR /app
 
@@ -30,5 +33,5 @@ RUN npm run build:backend
 # Открываем порт, который использует приложение
 EXPOSE 3000
 
-# Запускаем миграции (если нужно) и сервер
-CMD npx prisma db push --accept-data-loss && node dist/server.js
+# Проверяем переменную окружения и запускаем приложение
+CMD echo "DATABASE_URL is: ${DATABASE_URL:0:15}..." && npx prisma db push --accept-data-loss && node dist/server.js
