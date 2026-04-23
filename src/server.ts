@@ -123,7 +123,7 @@ import path from 'path';
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Для всех остальных маршрутов (клиентский роутинг) отдаем index.html
-app.get('*', (req, res) => {
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
