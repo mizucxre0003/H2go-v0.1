@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CLIENT
+  ADMIN
+  SUPERADMIN
+}
+
+enum OrderStatus {
+  NEW
+  UNDER_REVIEW
+  AWAITING_CLIENT_CONFIRMATION
+  CLIENT_CONFIRMED
+  PURCHASING
+  PURCHASED
+  IN_TRANSIT
+  ARRIVED_IN_COUNTRY
+  READY_FOR_PICKUP
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  telegramId   BigInt   @unique
+  username     String?
+  firstName    String?
+  lastName     String?
+  phone        String?
+  role         Role     @default(CLIENT)
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders           Order[]            @relation("ClientOrders")
+  managedOrders    Order[]            @relation("ManagerOrders")
+  statusHistory    OrderStatusHistory[] @relation("ManagerHistory")
+  currencyRates    CurrencyRate[]     @relation("ManagerRates")
+}
+
+model Order {
+  id               String       @id @default(uuid())
+  orderNumber      Int          @unique @default(autoincrement()) // For readable IDs like #1001
+  
+  clientId         String
+  client           User         @relation("ClientOrders", fields: [clientId], references: [id])
+  
+  link             String
+  name             String
+  description      String?
+  category         String?
+  quantity         Int          @default(1)
+  
+  priceOriginal    Float
+  currency         String       @default("USD")
+  internalRate     Float?
+  priceKzt         Float?
+  commission       Float?
+  deliveryCost     Float?
+  totalPrice       Float?
+  
+  status           OrderStatus  @default(NEW)
+  
+  trackNumber      String?
+  trackingLink     String?
+  
+  managerComment   String?
+  clientComment    String?
+  
+  managerId        String?
+  manager          User?        @relation("ManagerOrders", fields: [managerId], references: [id])
+  
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  
+  statusHistory    OrderStatusHistory[]
+}
+
+model OrderStatusHistory {
+  id          String      @id @default(uuid())
+  orderId     String
+  order       Order       @relation(fields: [orderId], references: [id])
+  status      OrderStatus
+  
+  managerId   String?
+  manager     User?       @relation("ManagerHistory", fields: [managerId], references: [id])
+  
+  comment     String?
+  createdAt   DateTime    @default(now())
+}
+
+model CurrencyRate {
+  id          String   @id @default(uuid())
+  currency    String   @unique
+  rate        Float
+  
+  managerId   String?
+  manager     User?    @relation("ManagerRates", fields: [managerId], references: [id])
+  
+  updatedAt   DateTime @updatedAt
+}
