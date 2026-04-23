@@ -57,7 +57,7 @@ api.get('/orders', async (req, res) => {
     });
     
     // Convert BigInt to string for JSON serialization
-    const serializedOrders = orders.map(order => ({
+    const serializedOrders = orders.map((order: any) => ({
       ...order,
       id: order.id.toString()
     }));

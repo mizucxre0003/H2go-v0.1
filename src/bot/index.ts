@@ -14,8 +14,8 @@ export const bot = token ? new Bot(token) : null;
 
 if (bot) {
   bot.command('start', async (ctx) => {
-    const telegramId = ctx.from?.id;
-    if (!telegramId) return;
+    if (!ctx.from) return;
+    const telegramId = ctx.from.id;
 
     // Register or update user
     try {
