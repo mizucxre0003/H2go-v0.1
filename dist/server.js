@@ -18,11 +18,15 @@ app.use(express_1.default.json());
 if (bot_1.bot) {
     // If webhook URL is set, use webhooks
     if (process.env.WEBHOOK_URL) {
+        const baseUrl = process.env.WEBHOOK_URL.replace(/\/$/, '');
         const webhookPath = '/api/bot-webhook';
-        app.use(webhookPath, (0, grammy_1.webhookCallback)(bot_1.bot, 'express'));
+        app.post(webhookPath, (req, res, next) => {
+            console.log('Incoming webhook request:', req.body?.update_id);
+            next();
+        }, (0, grammy_1.webhookCallback)(bot_1.bot, 'express'));
         // Set webhook in Telegram
-        bot_1.bot.api.setWebhook(`${process.env.WEBHOOK_URL}${webhookPath}`)
-            .then(() => console.log(`Webhook is set to ${process.env.WEBHOOK_URL}${webhookPath}`))
+        bot_1.bot.api.setWebhook(`${baseUrl}${webhookPath}`)
+            .then(() => console.log(`Webhook is set to ${baseUrl}${webhookPath}`))
             .catch(console.error);
     }
     else {
@@ -39,6 +43,68 @@ const api = express_1.default.Router();
 api.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
+// GET user info and role
+api.get('/auth/me', async (req, res) => {
+    const telegramId = req.query.telegramId;
+    if (!telegramId)
+        return res.status(400).json({ error: 'telegramId is required' });
+    try {
+        const user = await db_1.prisma.user.findUnique({
+            where: { telegramId: BigInt(telegramId) },
+            select: { id: true, role: true, firstName: true, status: true }
+        });
+        if (!user)
+            return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    }
+    catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// GET system settings
+api.get('/settings', async (req, res) => {
+    try {
+        const settings = await db_1.prisma.systemSetting.findMany();
+        // Convert array to object { key: value }
+        const settingsObj = settings.reduce((acc, curr) => {
+            acc[curr.key] = curr.value;
+            return acc;
+        }, {});
+        res.json(settingsObj);
+    }
+    catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// POST system settings (Admin only)
+api.post('/settings', async (req, res) => {
+    const { telegramId, settings } = req.body;
+    if (!telegramId || !settings)
+        return res.status(400).json({ error: 'Missing required fields' });
+    try {
+        const user = await db_1.prisma.user.findUnique({
+            where: { telegramId: BigInt(telegramId) },
+        });
+        if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN')) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+        // Upsert each setting
+        for (const [key, value] of Object.entries(settings)) {
+            await db_1.prisma.systemSetting.upsert({
+                where: { key },
+                update: { value: String(value) },
+                create: { key, value: String(value) },
+            });
+        }
+        res.json({ success: true });
+    }
+    catch (error) {
+        console.error('Error updating settings:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 // Get user orders (Dummy auth for now, later need initData validation)
 api.get('/orders', async (req, res) => {
     const telegramId = req.query.telegramId;
@@ -54,7 +120,7 @@ api.get('/orders', async (req, res) => {
             orderBy: { createdAt: 'desc' },
         });
         // Convert BigInt to string for JSON serialization
-        const serializedOrders = orders.map(order => ({
+        const serializedOrders = orders.map((order) => ({
             ...order,
             id: order.id.toString()
         }));
@@ -108,7 +174,7 @@ const path_1 = __importDefault(require("path"));
 // Раздача статики React (Vite)
 app.use(express_1.default.static(path_1.default.join(__dirname, '../frontend/dist')));
 // Для всех остальных маршрутов (клиентский роутинг) отдаем index.html
-app.get('*', (req, res) => {
+app.use((req, res) => {
     res.sendFile(path_1.default.join(__dirname, '../frontend/dist/index.html'));
 });
 app.listen(port, () => {

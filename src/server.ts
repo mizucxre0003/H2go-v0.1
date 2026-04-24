@@ -46,6 +46,70 @@ api.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// GET user info and role
+api.get('/auth/me', async (req, res) => {
+  const telegramId = req.query.telegramId as string;
+  if (!telegramId) return res.status(400).json({ error: 'telegramId is required' });
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { telegramId: BigInt(telegramId) },
+      select: { id: true, role: true, firstName: true, status: true }
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET system settings
+api.get('/settings', async (req, res) => {
+  try {
+    const settings = await prisma.systemSetting.findMany();
+    // Convert array to object { key: value }
+    const settingsObj = settings.reduce((acc: any, curr: any) => {
+      acc[curr.key] = curr.value;
+      return acc;
+    }, {});
+    res.json(settingsObj);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// POST system settings (Admin only)
+api.post('/settings', async (req, res) => {
+  const { telegramId, settings } = req.body;
+  if (!telegramId || !settings) return res.status(400).json({ error: 'Missing required fields' });
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { telegramId: BigInt(telegramId) },
+    });
+
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'SUPERADMIN')) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    // Upsert each setting
+    for (const [key, value] of Object.entries(settings)) {
+      await prisma.systemSetting.upsert({
+        where: { key },
+        update: { value: String(value) },
+        create: { key, value: String(value) },
+      });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get user orders (Dummy auth for now, later need initData validation)
 api.get('/orders', async (req, res) => {
   const telegramId = req.query.telegramId as string;

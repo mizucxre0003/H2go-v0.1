@@ -1,11 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
-import { PlusCircle, Package, Calculator, HeadphonesIcon } from 'lucide-react';
+import { PlusCircle, Package, Calculator, HeadphonesIcon, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useTelegram } from '../hooks/useTelegram';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { user, userId } = useTelegram();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // Check if user is admin
+    if (userId) {
+      fetch(`/api/auth/me?telegramId=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && (data.role === 'ADMIN' || data.role === 'SUPERADMIN')) {
+            setIsAdmin(true);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [userId]);
 
   const menuItems = [
     { title: 'Создать заявку', icon: <PlusCircle size={24} className="text-blue-400" />, path: '/create' },
@@ -14,6 +31,14 @@ export const Home: React.FC = () => {
     { title: 'Поддержка', icon: <HeadphonesIcon size={24} className="text-pink-400" />, path: '/support' },
   ];
 
+  if (isAdmin) {
+    menuItems.push({
+      title: 'Админ-панель',
+      icon: <Settings size={24} className="text-yellow-400" />,
+      path: '/admin'
+    });
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <motion.div 
@@ -21,7 +46,7 @@ export const Home: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="mb-4"
       >
-        <h1 className="text-2xl font-bold mb-1">Привет, Имя!</h1>
+        <h1 className="text-2xl font-bold mb-1">Привет, {user?.first_name || 'Гость'}!</h1>
         <p className="text-gray-400 text-sm">Что вы хотите сделать сегодня?</p>
       </motion.div>
 

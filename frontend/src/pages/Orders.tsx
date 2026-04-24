@@ -1,14 +1,66 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { GlassCard } from '../components/GlassCard';
 import { motion } from 'framer-motion';
+import { useTelegram } from '../hooks/useTelegram';
 
-const mockOrders = [
-  { id: '1001', name: 'Кроссовки Nike Air', price: '299 CNY', status: 'В пути', statusColor: 'text-blue-400' },
-  { id: '1002', name: 'Чехол iPhone 15', price: '45 CNY', status: 'Выкуплен', statusColor: 'text-purple-400' },
-  { id: '1003', name: 'Рюкзак Xiaomi', price: '120 CNY', status: 'Готов к выдаче', statusColor: 'text-emerald-400' },
-];
+interface Order {
+  id: string;
+  orderNumber: number;
+  name: string;
+  priceOriginal: number;
+  currency: string;
+  status: string;
+}
+
+const statusColors: Record<string, string> = {
+  NEW: 'text-blue-400',
+  UNDER_REVIEW: 'text-yellow-400',
+  AWAITING_CLIENT_CONFIRMATION: 'text-orange-400',
+  CLIENT_CONFIRMED: 'text-emerald-400',
+  PURCHASING: 'text-purple-400',
+  PURCHASED: 'text-indigo-400',
+  IN_TRANSIT: 'text-cyan-400',
+  ARRIVED_IN_COUNTRY: 'text-teal-400',
+  READY_FOR_PICKUP: 'text-green-400',
+  COMPLETED: 'text-gray-400',
+  CANCELLED: 'text-red-400'
+};
+
+const statusNames: Record<string, string> = {
+  NEW: 'Новая',
+  UNDER_REVIEW: 'На рассмотрении',
+  AWAITING_CLIENT_CONFIRMATION: 'Ожидает оплаты',
+  CLIENT_CONFIRMED: 'Оплачено',
+  PURCHASING: 'Выкупаем',
+  PURCHASED: 'Выкуплен',
+  IN_TRANSIT: 'В пути',
+  ARRIVED_IN_COUNTRY: 'Прибыл в страну',
+  READY_FOR_PICKUP: 'Готов к выдаче',
+  COMPLETED: 'Завершен',
+  CANCELLED: 'Отменен'
+};
 
 export const Orders: React.FC = () => {
+  const { userId } = useTelegram();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (userId) {
+      fetch(`/api/orders?telegramId=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setOrders(data);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [userId]);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -21,24 +73,32 @@ export const Orders: React.FC = () => {
       </div>
 
       <div className="flex flex-col gap-4">
-        {mockOrders.map((order, index) => (
-          <motion.div
-            key={order.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <GlassCard className="p-4 flex items-center justify-between" hoverEffect>
-              <div className="flex flex-col gap-1">
-                <span className="font-medium text-sm">#{order.id} • {order.name}</span>
-                <span className="text-xs text-gray-400">{order.price}</span>
-              </div>
-              <div className={`text-xs font-semibold px-2 py-1 bg-white/5 rounded-md border border-white/10 ${order.statusColor}`}>
-                {order.status}
-              </div>
-            </GlassCard>
-          </motion.div>
-        ))}
+        {loading ? (
+          <p className="text-gray-400 text-center py-8">Загрузка...</p>
+        ) : orders.length === 0 ? (
+          <div className="text-center py-8 px-4 bg-white/5 rounded-2xl border border-white/10">
+            <p className="text-gray-400 text-sm">У вас пока нет активных заявок.</p>
+          </div>
+        ) : (
+          orders.map((order, index) => (
+            <motion.div
+              key={order.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <GlassCard className="p-4 flex items-center justify-between" hoverEffect>
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium text-sm">#{order.orderNumber} • {order.name}</span>
+                  <span className="text-xs text-gray-400">{order.priceOriginal} {order.currency}</span>
+                </div>
+                <div className={`text-xs font-semibold px-2 py-1 bg-white/5 rounded-md border border-white/10 ${statusColors[order.status] || 'text-white'}`}>
+                  {statusNames[order.status] || order.status}
+                </div>
+              </GlassCard>
+            </motion.div>
+          ))
+        )}
       </div>
     </motion.div>
   );
