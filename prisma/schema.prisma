@@ -52,7 +52,7 @@ model Order {
   clientId         String
   client           User         @relation("ClientOrders", fields: [clientId], references: [id])
   
-  link             String
+  link             String?
   name             String
   description      String?
   category         String?

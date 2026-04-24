@@ -72,13 +72,12 @@ export const CreateOrder: React.FC = () => {
       <GlassCard className="p-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm text-gray-300">Ссылка на товар *</label>
+            <label className="text-sm text-gray-300">Ссылка на товар (необязательно)</label>
             <input 
               name="link"
               value={formData.link}
               onChange={handleChange}
               type="url" 
-              required
               placeholder="https://taobao.com/item..."
               className="glass-input w-full p-3 rounded-lg"
             />

@@ -20,7 +20,7 @@ export const Layout: React.FC = () => {
           </button>
         ) : (
           <div className="flex items-center">
-            <img src="/h2gologo.png" alt="H2GO" className="h-10 object-contain drop-shadow-lg filter brightness-110" />
+            <img src="/h2gologo.png" alt="H2GO" className="h-16 object-contain drop-shadow-lg filter brightness-110" />
           </div>
         )}
       </header>

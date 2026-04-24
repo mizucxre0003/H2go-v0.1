@@ -147,7 +147,7 @@ api.get('/orders', async (req, res) => {
 // Create a new order
 api.post('/orders', async (req, res) => {
     const { telegramId, link, name, description, quantity, priceOriginal, currency } = req.body;
-    if (!telegramId || !link || !name || !priceOriginal) {
+    if (!telegramId || !name || !priceOriginal) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
     try {
