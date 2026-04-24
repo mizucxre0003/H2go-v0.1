@@ -1,23 +1,61 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { motion } from 'framer-motion';
 import { Send } from 'lucide-react';
+import { useTelegram } from '../hooks/useTelegram';
 
 export const CreateOrder: React.FC = () => {
+  const navigate = useNavigate();
+  const { userId } = useTelegram();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     link: '',
     name: '',
     priceOriginal: '',
     quantity: '1',
-    comment: ''
+    description: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Send to backend
-    console.log('Submitted', formData);
-    // Temporary use setFormData to bypass lint error
-    setFormData({ ...formData });
+    if (!userId) {
+      alert('Ошибка: Не удалось определить пользователя Telegram.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegramId: userId,
+          link: formData.link,
+          name: formData.name,
+          priceOriginal: formData.priceOriginal,
+          quantity: parseInt(formData.quantity) || 1,
+          description: formData.description,
+          currency: 'CNY' // По умолчанию юани
+        })
+      });
+
+      if (res.ok) {
+        alert('Заявка успешно создана!');
+        navigate('/orders');
+      } else {
+        alert('Ошибка при создании заявки');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Ошибка при соединении с сервером');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,6 +74,9 @@ export const CreateOrder: React.FC = () => {
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-gray-300">Ссылка на товар *</label>
             <input 
+              name="link"
+              value={formData.link}
+              onChange={handleChange}
               type="url" 
               required
               placeholder="https://taobao.com/item..."
@@ -46,6 +87,9 @@ export const CreateOrder: React.FC = () => {
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-gray-300">Название *</label>
             <input 
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               type="text" 
               required
               placeholder="Кроссовки Nike"
@@ -57,6 +101,9 @@ export const CreateOrder: React.FC = () => {
             <div className="flex flex-col gap-1.5 flex-1">
               <label className="text-sm text-gray-300">Цена (юань) *</label>
               <input 
+                name="priceOriginal"
+                value={formData.priceOriginal}
+                onChange={handleChange}
                 type="number" 
                 required
                 placeholder="299"
@@ -66,8 +113,10 @@ export const CreateOrder: React.FC = () => {
             <div className="flex flex-col gap-1.5 flex-1">
               <label className="text-sm text-gray-300">Количество</label>
               <input 
+                name="quantity"
+                value={formData.quantity}
+                onChange={handleChange}
                 type="number" 
-                defaultValue="1"
                 min="1"
                 className="glass-input w-full p-3 rounded-lg"
               />
@@ -77,6 +126,9 @@ export const CreateOrder: React.FC = () => {
           <div className="flex flex-col gap-1.5">
             <label className="text-sm text-gray-300">Комментарий (размер, цвет)</label>
             <textarea 
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
               rows={3}
               placeholder="Черный цвет, размер 42"
               className="glass-input w-full p-3 rounded-lg resize-none"
@@ -85,10 +137,11 @@ export const CreateOrder: React.FC = () => {
 
           <button 
             type="submit"
-            className="glow-button w-full py-3.5 rounded-lg mt-2 flex items-center justify-center gap-2"
+            disabled={loading}
+            className="glow-button w-full py-3.5 rounded-lg mt-2 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Send size={18} />
-            <span>Отправить заявку</span>
+            <span>{loading ? 'Отправка...' : 'Отправить заявку'}</span>
           </button>
         </form>
       </GlassCard>

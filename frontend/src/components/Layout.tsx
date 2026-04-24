@@ -19,7 +19,9 @@ export const Layout: React.FC = () => {
             <ArrowLeft size={20} className="text-blue-400" />
           </button>
         ) : (
-          <div className="text-xl font-bold glow-text text-blue-400 tracking-wider">H2GO</div>
+          <div className="flex items-center">
+            <img src="/h2gologo.png" alt="H2GO" className="h-10 object-contain drop-shadow-lg filter brightness-110" />
+          </div>
         )}
       </header>
 
