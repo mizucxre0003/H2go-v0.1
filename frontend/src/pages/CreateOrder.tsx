@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { motion } from 'framer-motion';
@@ -9,15 +9,31 @@ export const CreateOrder: React.FC = () => {
   const navigate = useNavigate();
   const { userId } = useTelegram();
   const [loading, setLoading] = useState(false);
+  const [rates, setRates] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     link: '',
     name: '',
     priceOriginal: '',
+    currency: 'CNY',
     quantity: '1',
     description: ''
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  useEffect(() => {
+    fetch('/api/rates')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setRates(data);
+          if (!data.find(r => r.currency === 'CNY') && data.length > 0) {
+            setFormData(prev => ({ ...prev, currency: data[0].currency }));
+          }
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -37,10 +53,10 @@ export const CreateOrder: React.FC = () => {
           telegramId: userId,
           link: formData.link,
           name: formData.name,
-          priceOriginal: formData.priceOriginal,
+          priceOriginal: formData.priceOriginal || null,
           quantity: parseInt(formData.quantity) || 1,
           description: formData.description,
-          currency: 'CNY' // По умолчанию юани
+          currency: formData.currency
         })
       });
 
@@ -97,29 +113,46 @@ export const CreateOrder: React.FC = () => {
           </div>
 
           <div className="flex gap-4">
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-sm text-gray-300">Цена (юань) *</label>
+            <div className="flex flex-col gap-1.5 flex-[2]">
+              <label className="text-sm text-gray-300">Цена (необязательно)</label>
               <input 
                 name="priceOriginal"
                 value={formData.priceOriginal}
                 onChange={handleChange}
                 type="number" 
-                required
                 placeholder="299"
                 className="glass-input w-full p-3 rounded-lg"
               />
             </div>
-            <div className="flex flex-col gap-1.5 flex-1">
-              <label className="text-sm text-gray-300">Количество</label>
-              <input 
-                name="quantity"
-                value={formData.quantity}
+            <div className="flex flex-col gap-1.5 flex-[1]">
+              <label className="text-sm text-gray-300">Валюта</label>
+              <select
+                name="currency"
+                value={formData.currency}
                 onChange={handleChange}
-                type="number" 
-                min="1"
-                className="glass-input w-full p-3 rounded-lg"
-              />
+                className="glass-input w-full p-3 rounded-lg appearance-none bg-[#1A1A2E]"
+              >
+                {rates.length > 0 ? (
+                  rates.map(r => (
+                    <option key={r.currency} value={r.currency}>{r.currency}</option>
+                  ))
+                ) : (
+                  <option value="CNY">CNY</option>
+                )}
+              </select>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm text-gray-300">Количество</label>
+            <input 
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleChange}
+              type="number" 
+              min="1"
+              className="glass-input w-full p-3 rounded-lg"
+            />
           </div>
 
           <div className="flex flex-col gap-1.5">

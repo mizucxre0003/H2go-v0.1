@@ -58,7 +58,7 @@ model Order {
   category         String?
   quantity         Int          @default(1)
   
-  priceOriginal    Float
+  priceOriginal    Float?
   currency         String       @default("USD")
   internalRate     Float?
   priceKzt         Float?

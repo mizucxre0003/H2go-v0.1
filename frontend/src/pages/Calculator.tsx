@@ -4,21 +4,27 @@ import { motion } from 'framer-motion';
 
 export const Calculator: React.FC = () => {
   const [amount, setAmount] = useState('100');
-  const [rate, setRate] = useState(68.5); // Fallback rate
-
+  const [rates, setRates] = useState<any[]>([]);
+  const [selectedCurrency, setSelectedCurrency] = useState('CNY');
+  
   useEffect(() => {
     fetch('/api/rates')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
-          const cny = data.find((r: any) => r.currency === 'CNY');
-          if (cny) setRate(cny.rate);
+          setRates(data);
+          // If CNY exists, use it as default, otherwise pick the first one
+          if (!data.find(r => r.currency === 'CNY') && data.length > 0) {
+            setSelectedCurrency(data[0].currency);
+          }
         }
       })
       .catch(console.error);
   }, []);
   
-  const total = parseFloat(amount || '0') * rate;
+  const currentRateObj = rates.find(r => r.currency === selectedCurrency);
+  const currentRate = currentRateObj ? currentRateObj.rate : 0;
+  const total = parseFloat(amount || '0') * currentRate;
 
   return (
     <motion.div
@@ -32,22 +38,37 @@ export const Calculator: React.FC = () => {
       </div>
 
       <GlassCard className="p-5 flex flex-col gap-5">
-        <div className="flex flex-col gap-2">
-          <label className="text-sm text-gray-300">Сумма в юанях (CNY)</label>
-          <div className="relative">
-            <span className="absolute left-4 top-3 text-gray-400">¥</span>
+        <div className="flex gap-2">
+          <div className="flex flex-col gap-2 flex-grow">
+            <label className="text-sm text-gray-300">Сумма</label>
             <input 
               type="number" 
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="glass-input w-full p-3 pl-10 text-xl font-bold rounded-lg"
+              className="glass-input w-full p-3 text-xl font-bold rounded-lg"
             />
+          </div>
+          <div className="flex flex-col gap-2 w-1/3">
+            <label className="text-sm text-gray-300">Валюта</label>
+            <select
+              value={selectedCurrency}
+              onChange={(e) => setSelectedCurrency(e.target.value)}
+              className="glass-input w-full p-3 text-xl font-bold rounded-lg appearance-none bg-[#1A1A2E]"
+            >
+              {rates.length > 0 ? (
+                rates.map(r => (
+                  <option key={r.currency} value={r.currency}>{r.currency}</option>
+                ))
+              ) : (
+                <option value="CNY">CNY</option>
+              )}
+            </select>
           </div>
         </div>
 
         <div className="flex justify-between items-center px-2">
-          <span className="text-sm text-gray-400">Внутренний курс</span>
-          <span className="font-medium text-blue-400">{rate} ₸</span>
+          <span className="text-sm text-gray-400">Внутренний курс (1 {selectedCurrency})</span>
+          <span className="font-medium text-blue-400">{currentRate} ₸</span>
         </div>
 
         <div className="h-[1px] bg-white/10 w-full my-2"></div>
