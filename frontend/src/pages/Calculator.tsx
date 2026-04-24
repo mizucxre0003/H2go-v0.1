@@ -1,10 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GlassCard } from '../components/GlassCard';
 import { motion } from 'framer-motion';
 
 export const Calculator: React.FC = () => {
   const [amount, setAmount] = useState('100');
-  const rate = 68.5; // Dummy rate
+  const [rate, setRate] = useState(68.5); // Fallback rate
+
+  useEffect(() => {
+    fetch('/api/rates')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const cny = data.find((r: any) => r.currency === 'CNY');
+          if (cny) setRate(cny.rate);
+        }
+      })
+      .catch(console.error);
+  }, []);
   
   const total = parseFloat(amount || '0') * rate;
 

@@ -39,12 +39,27 @@ if (bot) {
   }
 }
 
+import { createAdminRouter } from './adminRoutes';
+
 // API Endpoints for Mini App
 const api = express.Router();
 
 api.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// Public GET rates endpoint for Calculator
+api.get('/rates', async (req, res) => {
+  try {
+    const rates = await prisma.currencyRate.findMany();
+    res.json(rates);
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Admin endpoints
+api.use('/admin', createAdminRouter(bot));
 
 // GET user info and role
 api.get('/auth/me', async (req, res) => {

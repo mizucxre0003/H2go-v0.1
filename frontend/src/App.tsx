@@ -6,6 +6,10 @@ import { Calculator } from './pages/Calculator';
 import { Support } from './pages/Support';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminSettings } from './pages/admin/AdminSettings';
+import { AdminOrders } from './pages/admin/AdminOrders';
+import { AdminOrderDetail } from './pages/admin/AdminOrderDetail';
+import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminCurrency } from './pages/admin/AdminCurrency';
 import { Layout } from './components/Layout';
 
 function App() {
@@ -18,8 +22,14 @@ function App() {
           <Route path="orders" element={<Orders />} />
           <Route path="calc" element={<Calculator />} />
           <Route path="support" element={<Support />} />
+          
+          {/* Admin Routes */}
           <Route path="admin" element={<AdminDashboard />} />
           <Route path="admin/settings" element={<AdminSettings />} />
+          <Route path="admin/orders" element={<AdminOrders />} />
+          <Route path="admin/orders/:id" element={<AdminOrderDetail />} />
+          <Route path="admin/users" element={<AdminUsers />} />
+          <Route path="admin/rates" element={<AdminCurrency />} />
         </Route>
       </Routes>
     </BrowserRouter>

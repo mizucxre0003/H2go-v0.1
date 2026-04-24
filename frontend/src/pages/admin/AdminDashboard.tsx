@@ -1,16 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../../components/GlassCard';
-import { Settings, Users, Package } from 'lucide-react';
+import { Settings, Users, Package, CircleDollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
 
   const menuItems = [
-    { title: 'Настройки', description: 'Контакты поддержки и курсы валют', icon: <Settings size={24} className="text-yellow-400" />, path: '/admin/settings' },
     { title: 'Заявки', description: 'Управление заказами пользователей', icon: <Package size={24} className="text-blue-400" />, path: '/admin/orders' },
-    { title: 'Пользователи', description: 'Управление ролями', icon: <Users size={24} className="text-emerald-400" />, path: '/admin/users' },
+    { title: 'Курсы валют', description: 'Настройка конвертации', icon: <CircleDollarSign size={24} className="text-emerald-400" />, path: '/admin/rates' },
+    { title: 'Пользователи', description: 'Управление ролями', icon: <Users size={24} className="text-cyan-400" />, path: '/admin/users' },
+    { title: 'Настройки', description: 'Контакты поддержки', icon: <Settings size={24} className="text-yellow-400" />, path: '/admin/settings' },
   ];
 
   return (

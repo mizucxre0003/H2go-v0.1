@@ -38,11 +38,24 @@ if (bot_1.bot) {
         });
     }
 }
+const adminRoutes_1 = require("./adminRoutes");
 // API Endpoints for Mini App
 const api = express_1.default.Router();
 api.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
+// Public GET rates endpoint for Calculator
+api.get('/rates', async (req, res) => {
+    try {
+        const rates = await db_1.prisma.currencyRate.findMany();
+        res.json(rates);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+// Admin endpoints
+api.use('/admin', (0, adminRoutes_1.createAdminRouter)(bot_1.bot));
 // GET user info and role
 api.get('/auth/me', async (req, res) => {
     const telegramId = req.query.telegramId;
